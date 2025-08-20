@@ -222,37 +222,13 @@ class EmailService:
     
     def get_daily_stats(self) -> Dict:
         """Retorna estatísticas do dia atual"""
-        today = datetime.now().date()
+        # Obtém estatísticas do banco de dados
+        db_stats = self.db.get_daily_stats()
         
-        with sqlite3.connect(self.db.db_path) as conn:
-            cursor = conn.cursor()
-            
-            # Emails enviados hoje
-            cursor.execute('''
-                SELECT COUNT(*) FROM email_logs 
-                WHERE DATE(sent_at) = ?
-            ''', (today,))
-            sent_today = cursor.fetchone()[0]
-            
-            # Emails abertos hoje
-            cursor.execute('''
-                SELECT COUNT(*) FROM email_logs 
-                WHERE DATE(opened_at) = ?
-            ''', (today,))
-            opened_today = cursor.fetchone()[0]
-            
-            # Emails clicados hoje
-            cursor.execute('''
-                SELECT COUNT(*) FROM email_logs 
-                WHERE DATE(clicked_at) = ?
-            ''', (today,))
-            clicked_today = cursor.fetchone()[0]
+        # Adiciona informações do contador diário
+        db_stats.update({
+            'remaining_quota': max(0, Config.MAX_EMAILS_PER_DAY - self.daily_sent_count),
+            'daily_sent_count': self.daily_sent_count
+        })
         
-        return {
-            'date': today.isoformat(),
-            'sent_today': sent_today,
-            'opened_today': opened_today,
-            'clicked_today': clicked_today,
-            'daily_limit': Config.MAX_EMAILS_PER_DAY,
-            'remaining_quota': max(0, Config.MAX_EMAILS_PER_DAY - self.daily_sent_count)
-        }
+        return db_stats

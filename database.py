@@ -133,6 +133,14 @@ class Database:
             row = cursor.fetchone()
             return dict(row) if row else None
     
+    def get_campaigns(self) -> List[Dict]:
+        """Lista todas as campanhas"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('SELECT * FROM campaigns ORDER BY created_at DESC')
+            return [dict(row) for row in cursor.fetchall()]
+    
     def log_email_sent(self, campaign_id: int, contact_id: int, email: str) -> int:
         """Registra um email enviado"""
         with sqlite3.connect(self.db_path) as conn:
@@ -204,4 +212,31 @@ class Database:
                 'open_rate': (total_opened / total_sent * 100) if total_sent > 0 else 0,
                 'click_rate': (total_clicked / total_sent * 100) if total_sent > 0 else 0,
                 'bounce_rate': (total_bounced / total_sent * 100) if total_sent > 0 else 0
+            }
+    
+    def get_daily_stats(self) -> Dict:
+        """Retorna estatísticas do dia atual"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Emails enviados hoje
+            cursor.execute('''
+                SELECT COUNT(*) FROM email_logs 
+                WHERE DATE(sent_at) = DATE('now')
+            ''')
+            emails_sent_today = cursor.fetchone()[0]
+            
+            # Total de contatos
+            cursor.execute('SELECT COUNT(*) FROM contacts WHERE status = "active"')
+            total_contacts = cursor.fetchone()[0]
+            
+            # Total de campanhas
+            cursor.execute('SELECT COUNT(*) FROM campaigns')
+            total_campaigns = cursor.fetchone()[0]
+            
+            return {
+                'emails_sent_today': emails_sent_today,
+                'total_contacts': total_contacts,
+                'total_campaigns': total_campaigns,
+                'daily_limit': 10000  # Limite padrão
             }
