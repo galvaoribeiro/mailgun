@@ -219,10 +219,10 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             
-            # Emails enviados hoje
+            # Emails enviados hoje - usando fuso horário local (UTC-3)
             cursor.execute('''
                 SELECT COUNT(*) FROM email_logs 
-                WHERE DATE(sent_at) = DATE('now')
+                WHERE strftime('%Y-%m-%d', sent_at, '-3 hours') = strftime('%Y-%m-%d', 'now', '-3 hours')
             ''')
             emails_sent_today = cursor.fetchone()[0]
             

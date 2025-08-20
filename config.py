@@ -7,7 +7,7 @@ load_dotenv()
 class Config:
     # Configurações do Mailgun
     MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
-    MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN', 'sandbox4edf729669064f5ebc1687a8d6e403dd.mailgun.org')
+    MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN', 'auditor-simples.com')
     BASE_URL = f'https://api.mailgun.net/v3/{MAILGUN_DOMAIN}'
     
     # Configurações de envio
