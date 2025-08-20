@@ -1,0 +1,12 @@
+# Configurações do Mailgun
+MAILGUN_API_KEY=sua_api_key_aqui
+MAILGUN_DOMAIN=mg.auditor-simples.com
+
+# Configurações da aplicação
+PORT=5000
+DEBUG=True
+
+# Configurações de envio
+BATCH_SIZE=1000
+DELAY_BETWEEN_BATCHES=60
+MAX_EMAILS_PER_DAY=10000
