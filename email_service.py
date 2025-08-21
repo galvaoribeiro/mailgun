@@ -28,12 +28,16 @@ class EmailService:
         return self.daily_sent_count < Config.MAX_EMAILS_PER_DAY
     
     def add_contacts_from_csv(self, csv_file_path: str, source: str = 'csv_import') -> int:
-        """Importa contatos de um arquivo CSV"""
+        """Importa contatos de um arquivo CSV com controle de lote"""
         import pandas as pd
+        import uuid
         
         try:
             df = pd.read_csv(csv_file_path)
             contacts = []
+            
+            # Gera um ID único para este lote de importação
+            batch_id = f"batch_{uuid.uuid4().hex[:8]}_{int(datetime.now().timestamp())}"
             
             for _, row in df.iterrows():
                 contact = {
@@ -47,7 +51,11 @@ class EmailService:
                 if contact['email']:  # Só adiciona se tiver email
                     contacts.append(contact)
             
-            return self.db.add_contacts_bulk(contacts)
+            # Adiciona contatos com o batch_id, que automaticamente desativa lotes antigos
+            count = self.db.add_contacts_bulk(contacts, batch_id)
+            
+            print(f"Importação concluída: {count} contatos importados no lote {batch_id}")
+            return count
         
         except Exception as e:
             print(f"Erro ao importar CSV: {e}")

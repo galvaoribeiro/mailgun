@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cold Email Service - Interface Amigável</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📧 Cold Email Service</h1>
+            <p>Interface amigável para envio de emails em massa</p>
+        </div>
+        
+        <div class="content">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('upload', this)">📁 Upload CSV</div>
+                <div class="tab" onclick="showTab('campaigns', this)">📝 Campanhas</div>
+                <div class="tab" onclick="showTab('send', this)">🚀 Enviar</div>
+                <div class="tab" onclick="showTab('batches', this)">📦 Gerenciar Lotes</div>
+                <div class="tab" onclick="showTab('stats', this)">📊 Estatísticas</div>
+            </div>
+            
+            <!-- Tab Upload CSV -->
+            <div id="upload" class="tab-content active">
+                <h2>Importar Contatos</h2>
+                <p>Faça upload do seu arquivo CSV com os contatos para importar.</p>
+                
+                <div id="upload-alert"></div>
+                
+                <form id="upload-form">
+                    <div class="form-group">
+                        <label>Arquivo CSV:</label>
+                        <div class="file-upload" onclick="document.getElementById('csv-file').click()">
+                            <input type="file" id="csv-file" accept=".csv" onchange="updateFileName()">
+                            <div class="file-upload-label">
+                                <div>📁 Clique para selecionar arquivo CSV</div>
+                                <div id="file-name" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Fonte dos contatos:</label>
+                        <input type="text" class="form-control" id="source" value="csv_import" placeholder="Ex: site_web, linkedin, etc">
+                    </div>
+                    
+                    <button type="submit" class="btn">📥 Importar Contatos</button>
+                </form>
+                
+                <div class="loading" id="upload-loading">
+                    <div class="spinner"></div>
+                    <p>Importando contatos...</p>
+                </div>
+            </div>
+            
+            <!-- Tab Campanhas -->
+            <div id="campaigns" class="tab-content">
+                <h2>Criar Nova Campanha</h2>
+                <p>Crie uma nova campanha de email personalizada.</p>
+                
+                <div id="campaign-alert"></div>
+                
+                <form id="campaign-form">
+                    <div class="form-group">
+                        <label>Nome da Campanha:</label>
+                        <input type="text" class="form-control" id="campaign-name" placeholder="Ex: Campanha de Boas-vindas" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Assunto do Email:</label>
+                        <input type="text" class="form-control" id="campaign-subject" placeholder="Ex: Olá {nome}, temos uma proposta para você!" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Corpo do Email:</label>
+                        <textarea class="form-control" id="campaign-body" rows="10" placeholder="Digite o conteúdo do email. Use {nome}, {email}, {empresa} para personalização." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn">📝 Criar Campanha</button>
+                </form>
+                
+                <div class="loading" id="campaign-loading">
+                    <div class="spinner"></div>
+                    <p>Criando campanha...</p>
+                </div>
+                
+                <h3 style="margin-top: 40px;">Campanhas Existentes</h3>
+                <div id="campaigns-list" class="campaign-list">
+                    <p>Carregando campanhas...</p>
+                </div>
+            </div>
+            
+            <!-- Tab Enviar -->
+            <div id="send" class="tab-content">
+                <h2>Enviar Campanha</h2>
+                <p>Selecione uma campanha e envie para seus contatos.</p>
+                
+                <div id="send-alert"></div>
+                
+                <form id="send-form">
+                    <div class="form-group">
+                        <label>Selecionar Campanha:</label>
+                        <select class="form-control" id="send-campaign" required>
+                            <option value="">Selecione uma campanha...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Limite de Contatos (opcional):</label>
+                        <input type="number" class="form-control" id="contact-limit" placeholder="Deixe vazio para enviar para todos">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="test-mode"> Modo Teste (envia apenas para você)
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="async-mode" checked> Envio Assíncrono (recomendado)
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn">🚀 Enviar Campanha</button>
+                </form>
+                
+                <div class="loading" id="send-loading">
+                    <div class="spinner"></div>
+                    <p>Enviando campanha...</p>
+                </div>
+            </div>
+            
+            <!-- Tab Gerenciar Lotes -->
+            <div id="batches" class="tab-content">
+                <h2>Gerenciar Lotes de Contatos</h2>
+                <p>Visualize e gerencie os lotes de contatos importados. Apenas contatos de lotes ativos serão enviados em campanhas.</p>
+                
+                <div id="batches-alert"></div>
+                
+                <div class="loading" id="batches-loading">
+                    <div class="spinner"></div>
+                    <p>Carregando lotes...</p>
+                </div>
+                
+                <div id="batches-list" class="campaign-list">
+                    <p>Carregando lotes de contatos...</p>
+                </div>
+            </div>
+            
+            <!-- Tab Estatísticas -->
+            <div id="stats" class="tab-content">
+                <h2>Estatísticas</h2>
+                <p>Acompanhe o desempenho das suas campanhas.</p>
+                
+                <div id="stats-alert"></div>
+                
+                <div class="stats-grid" id="daily-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="daily-sent">-</div>
+                        <div class="stat-label">Emails Enviados Hoje</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="daily-limit">-</div>
+                        <div class="stat-label">Limite Diário</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-contacts">-</div>
+                        <div class="stat-label">Total de Contatos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-campaigns">-</div>
+                        <div class="stat-label">Total de Campanhas</div>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="loadStats()">🔄 Atualizar Estatísticas</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

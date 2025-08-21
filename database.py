@@ -13,7 +13,7 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             
-            # Tabela de contatos
+            # Tabela de contatos - adicionando batch_id para controle de lotes
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS contacts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,10 +23,18 @@ class Database:
                     position TEXT,
                     source TEXT,
                     status TEXT DEFAULT 'active',
+                    batch_id TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+            
+            # Adiciona coluna batch_id se não existir (para compatibilidade)
+            try:
+                cursor.execute('ALTER TABLE contacts ADD COLUMN batch_id TEXT')
+            except sqlite3.OperationalError:
+                # Coluna já existe
+                pass
             
             # Tabela de campanhas
             cursor.execute('''
@@ -62,55 +70,145 @@ class Database:
             conn.commit()
     
     def add_contact(self, email: str, name: str = None, company: str = None, 
-                   position: str = None, source: str = None) -> int:
+                   position: str = None, source: str = None, batch_id: str = None) -> int:
         """Adiciona um novo contato"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT OR REPLACE INTO contacts (email, name, company, position, source, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (email, name, company, position, source, datetime.now()))
+                INSERT OR REPLACE INTO contacts (email, name, company, position, source, batch_id, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (email, name, company, position, source, batch_id, datetime.now()))
             conn.commit()
             return cursor.lastrowid
     
-    def add_contacts_bulk(self, contacts: List[Dict]) -> int:
-        """Adiciona múltiplos contatos de uma vez"""
+    def add_contacts_bulk(self, contacts: List[Dict], batch_id: str = None) -> int:
+        """Adiciona múltiplos contatos de uma vez com controle de lote"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             count = 0
+            
+            # Se um batch_id foi fornecido, desativa contatos antigos primeiro
+            if batch_id:
+                cursor.execute('''
+                    UPDATE contacts 
+                    SET status = 'inactive', updated_at = ? 
+                    WHERE batch_id IS NOT NULL AND batch_id != ?
+                ''', (datetime.now(), batch_id))
+            
             for contact in contacts:
                 try:
                     cursor.execute('''
-                        INSERT OR REPLACE INTO contacts (email, name, company, position, source, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT OR REPLACE INTO contacts (email, name, company, position, source, batch_id, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         contact['email'], 
                         contact.get('name'), 
                         contact.get('company'), 
                         contact.get('position'), 
                         contact.get('source'), 
+                        batch_id,
                         datetime.now()
                     ))
                     count += 1
                 except Exception as e:
                     print(f"Erro ao adicionar contato {contact['email']}: {e}")
+            
             conn.commit()
             return count
     
-    def get_contacts(self, status: str = 'active', limit: int = None) -> List[Dict]:
-        """Busca contatos por status"""
+    def get_contacts(self, status: str = 'active', limit: int = None, batch_id: str = None) -> List[Dict]:
+        """Busca contatos por status e opcionalmente por batch_id"""
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             
-            query = "SELECT * FROM contacts WHERE status = ?"
-            params = [status]
+            if batch_id:
+                query = "SELECT * FROM contacts WHERE status = ? AND batch_id = ?"
+                params = [status, batch_id]
+            else:
+                query = "SELECT * FROM contacts WHERE status = ?"
+                params = [status]
             
             if limit:
                 query += " LIMIT ?"
                 params.append(limit)
             
             cursor.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+    
+    def get_active_batches(self) -> List[Dict]:
+        """Retorna todos os lotes ativos com contagem de contatos"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT 
+                    batch_id,
+                    COUNT(*) as contact_count,
+                    MIN(created_at) as first_import,
+                    MAX(created_at) as last_import,
+                    CASE 
+                        WHEN COUNT(CASE WHEN status = 'active' THEN 1 END) > 0 THEN 'active'
+                        ELSE 'inactive'
+                    END as batch_status
+                FROM contacts 
+                WHERE batch_id IS NOT NULL 
+                GROUP BY batch_id 
+                ORDER BY last_import DESC
+            ''')
+            
+            batches = []
+            for row in cursor.fetchall():
+                batches.append({
+                    'batch_id': row[0],
+                    'contact_count': row[1],
+                    'first_import': row[2],
+                    'last_import': row[3],
+                    'status': row[4]
+                })
+            
+            return batches
+    
+    def activate_batch(self, batch_id: str) -> bool:
+        """Ativa um lote específico e desativa todos os outros"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Desativa todos os contatos
+            cursor.execute('''
+                UPDATE contacts 
+                SET status = 'inactive', updated_at = ?
+            ''', (datetime.now(),))
+            
+            # Ativa apenas os contatos do lote especificado
+            cursor.execute('''
+                UPDATE contacts 
+                SET status = 'active', updated_at = ?
+                WHERE batch_id = ?
+            ''', (datetime.now(), batch_id))
+            
+            conn.commit()
+            return True
+    
+    def deactivate_batch(self, batch_id: str) -> bool:
+        """Desativa um lote específico"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                UPDATE contacts 
+                SET status = 'inactive', updated_at = ?
+                WHERE batch_id = ?
+            ''', (datetime.now(), batch_id))
+            conn.commit()
+            return True
+    
+    def get_contacts_by_batch(self, batch_id: str) -> List[Dict]:
+        """Retorna todos os contatos de um lote específico"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT * FROM contacts WHERE batch_id = ? ORDER BY created_at DESC
+            ''', (batch_id,))
             return [dict(row) for row in cursor.fetchall()]
     
     def create_campaign(self, name: str, subject: str, body_template: str) -> int:
