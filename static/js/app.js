@@ -180,6 +180,9 @@ async function loadCampaigns() {
                     <div class="campaign-details">
                         ID: ${campaign.id} | Criada em: ${new Date(campaign.created_at).toLocaleDateString('pt-BR')}
                     </div>
+                    <div class="campaign-actions">
+                        <button class="btn btn-secondary" onclick="viewCampaign(${campaign.id})">👁️ Visualizar</button>
+                    </div>
                 </div>
             `).join('');
         } else {
@@ -442,6 +445,165 @@ async function loadStats() {
     } catch (error) {
         showAlert('stats-alert', 'Erro ao carregar estatísticas.', 'error');
     }
+}
+
+// Função para visualizar uma campanha
+async function viewCampaign(campaignId) {
+    try {
+        // Busca dados da campanha
+        const campaignResponse = await fetch(`/campaigns/${campaignId}`);
+        const campaignResult = await campaignResponse.json();
+        
+        if (!campaignResult.success) {
+            showAlert('campaign-alert', 'Erro ao carregar campanha: ' + campaignResult.error, 'error');
+            return;
+        }
+        
+        const campaign = campaignResult.campaign;
+        
+        // Busca estatísticas da campanha
+        let stats = null;
+        try {
+            const statsResponse = await fetch(`/campaigns/${campaignId}/stats`);
+            const statsResult = await statsResponse.json();
+            if (statsResult.success) {
+                stats = statsResult.stats;
+            }
+        } catch (error) {
+            console.log('Não foi possível carregar estatísticas da campanha');
+        }
+        
+        // Cria o modal de visualização
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content campaign-view-modal';
+        
+                    modalContent.innerHTML = `
+                <div class="campaign-view-header">
+                    <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+                    <h2>${campaign.name}</h2>
+                    <div class="campaign-meta">
+                        <span class="meta-item">ID: ${campaign.id}</span>
+                        <span class="meta-item">Criada em: ${new Date(campaign.created_at).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                </div>
+            
+            <div class="campaign-content">
+                <div class="campaign-section">
+                    <h3>📧 Assunto do Email</h3>
+                    <div class="campaign-subject">${campaign.subject}</div>
+                </div>
+                
+                <div class="campaign-section">
+                    <h3>📝 Conteúdo do Email</h3>
+                    <div class="campaign-body">${campaign.body_template.replace(/\n/g, '<br>')}</div>
+                </div>
+                
+                ${stats ? `
+                <div class="campaign-section">
+                    <h3>📊 Estatísticas da Campanha</h3>
+                    <div class="campaign-stats">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.emails_sent || 0}</div>
+                                <div class="stat-label">Emails Enviados</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.delivered || 0}</div>
+                                <div class="stat-label">Entregues</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.bounced || 0}</div>
+                                <div class="stat-label">Retornados</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.opened || 0}</div>
+                                <div class="stat-label">Abertos</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="campaign-section">
+                    <h3>🔧 Variáveis Disponíveis</h3>
+                    <div class="variables-info">
+                        <p>Use estas variáveis no assunto e corpo do email para personalização:</p>
+                        <ul>
+                            <li><code>{nome}</code> - Nome do destinatário</li>
+                            <li><code>{email}</code> - Email do destinatário</li>
+                            <li><code>{empresa}</code> - Nome da empresa</li>
+                            <li><code>{cargo}</code> - Cargo/função</li>
+                            <li><code>{telefone}</code> - Número de telefone</li>
+                            <li><code>{linkedin}</code> - Perfil do LinkedIn</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="campaign-actions">
+                <button class="btn" onclick="sendCampaignFromView(${campaign.id})">🚀 Enviar Campanha</button>
+                <button class="btn btn-secondary" onclick="closeModal()">Fechar</button>
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+        // Adiciona evento para fechar modal ao clicar fora
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Adiciona event listener para tecla ESC
+        addEscapeListener();
+        
+    } catch (error) {
+        showAlert('campaign-alert', 'Erro de conexão ao carregar campanha: ' + error.message, 'error');
+    }
+}
+
+// Função para enviar campanha a partir da visualização
+function sendCampaignFromView(campaignId) {
+    closeModal();
+    // Muda para a aba de envio
+    const sendTab = document.querySelector('.tab[onclick*="send"]');
+    if (sendTab) {
+        showTab('send', sendTab);
+        // Seleciona a campanha
+        setTimeout(() => {
+            const select = document.getElementById('send-campaign');
+            if (select) {
+                select.value = campaignId;
+            }
+        }, 100);
+    }
+}
+
+// Função para fechar modal
+function closeModal() {
+    const modal = document.querySelector('.modal');
+    if (modal) {
+        document.body.removeChild(modal);
+        // Remove event listeners
+        document.removeEventListener('keydown', handleEscapeKey);
+    }
+}
+
+// Função para lidar com tecla ESC
+function handleEscapeKey(event) {
+    if (event.key === 'Escape') {
+        closeModal();
+    }
+}
+
+// Adiciona event listener para tecla ESC quando modal é aberto
+function addEscapeListener() {
+    document.addEventListener('keydown', handleEscapeKey);
 }
 
 // Carregar dados iniciais

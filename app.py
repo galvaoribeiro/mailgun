@@ -263,6 +263,23 @@ def create_campaign():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/campaigns/<int:campaign_id>', methods=['GET'])
+def get_campaign(campaign_id):
+    """Retorna uma campanha específica"""
+    try:
+        campaign = email_service.db.get_campaign(campaign_id)
+        
+        if not campaign:
+            return jsonify({'error': 'Campanha não encontrada'}), 404
+        
+        return jsonify({
+            'success': True,
+            'campaign': campaign
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/campaigns/<int:campaign_id>/send', methods=['POST'])
 def send_campaign(campaign_id):
     """Envia uma campanha"""
