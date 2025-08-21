@@ -98,6 +98,21 @@ class MailgunClient:
         
         return results
     
+    def convert_template_tags(self, template: str) -> str:
+        """Converte tags do formato {name} para o formato %recipient.name% do Mailgun"""
+        replacements = {
+            '{name}': '%recipient.name%',
+            '{company}': '%recipient.company%',
+            '{position}': '%recipient.position%',
+            '{source}': '%recipient.source%'
+        }
+        
+        converted_template = template
+        for old_tag, new_tag in replacements.items():
+            converted_template = converted_template.replace(old_tag, new_tag)
+        
+        return converted_template
+
     def send_personalized_emails(self, contacts: List[Dict], subject_template: str, 
                                body_template: str, batch_size: int = None,
                                delay: int = None, campaign_tag: str = None) -> List[Dict]:
@@ -106,41 +121,32 @@ class MailgunClient:
         delay = delay or Config.DELAY_BETWEEN_BATCHES
         results = []
         
-        # Prepara variáveis dos destinatários
-        recipient_vars = {}
-        for contact in contacts:
-            email = contact['email']
-            recipient_vars[email] = {
-                'name': contact.get('name', 'Cliente'),
-                'company': contact.get('company', ''),
-                'position': contact.get('position', '')
-            }
+        # Converte as tags dos templates para o formato do Mailgun
+        mailgun_subject = self.convert_template_tags(subject_template)
+        mailgun_body = self.convert_template_tags(body_template)
         
         # Divide em lotes
         for i in range(0, len(contacts), batch_size):
             batch_contacts = contacts[i:i + batch_size]
             batch_emails = [contact['email'] for contact in batch_contacts]
             
-            # Personaliza o assunto e corpo para o primeiro contato do lote
-            # (Mailgun usa o mesmo template para todos no lote)
-            first_contact = batch_contacts[0]
-            subject = subject_template.format(
-                name=first_contact.get('name', 'Cliente'),
-                company=first_contact.get('company', '')
-            )
+            # Prepara variáveis dos destinatários APENAS para este lote
+            batch_recipient_vars = {}
+            for contact in batch_contacts:
+                email = contact['email']
+                batch_recipient_vars[email] = {
+                    'name': contact.get('name', 'Cliente'),
+                    'company': contact.get('company', ''),
+                    'position': contact.get('position', ''),
+                    'source': contact.get('source', '')
+                }
             
-            body = body_template.format(
-                name=first_contact.get('name', 'Cliente'),
-                company=first_contact.get('company', ''),
-                position=first_contact.get('position', '')
-            )
-            
-            # Envia o lote
+            # Envia o lote com templates convertidos para o formato do Mailgun
             batch_result = self.send_bulk_emails(
                 recipients=batch_emails,
-                subject=subject,
-                body_template=body,
-                recipient_vars=recipient_vars,
+                subject=mailgun_subject,  # Template convertido
+                body_template=mailgun_body,  # Template convertido
+                recipient_vars=batch_recipient_vars,  # Apenas para este lote
                 batch_size=len(batch_emails),
                 delay=0,  # Sem delay entre sub-lotes
                 campaign_tag=campaign_tag

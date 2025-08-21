@@ -2,6 +2,33 @@
 
 Este arquivo contém exemplos de templates eficazes para cold emails que você pode usar como base para suas campanhas.
 
+## 🎯 Como Funcionam as Tags de Personalização
+
+**IMPORTANTE**: O sistema converte automaticamente as tags do formato `{name}` para o formato `%recipient.name%` que o Mailgun entende. Cada contato receberá um email personalizado com suas informações específicas.
+
+### Variáveis Disponíveis
+- `{name}` - Nome do contato (ex: João Silva)
+- `{company}` - Nome da empresa (ex: TechCorp Ltda)
+- `{position}` - Cargo/função (ex: Gerente de Marketing)
+- `{source}` - Origem do contato (ex: LinkedIn, CSV import)
+
+### Exemplo de Funcionamento
+Se você tiver um template com:
+```
+Olá {name},
+Como {position} na {company}, você deve enfrentar desafios específicos...
+```
+
+E enviar para 3 contatos:
+1. João Silva, CEO, TechCorp
+2. Maria Santos, Marketing, Inovação Ltda
+3. Pedro Costa, Vendas, VendasPro
+
+Cada um receberá:
+- João: "Olá João Silva, Como CEO na TechCorp, você deve enfrentar desafios específicos..."
+- Maria: "Olá Maria Santos, Como Marketing na Inovação Ltda, você deve enfrentar desafios específicos..."
+- Pedro: "Olá Pedro Costa, Como Vendas na VendasPro, você deve enfrentar desafios específicos..."
+
 ## 🎯 Template 1: Apresentação de Produto/Serviço
 
 **Assunto:** `Olá {name}, solução para {company} economizar tempo e dinheiro`
