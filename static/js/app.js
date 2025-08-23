@@ -182,6 +182,7 @@ async function loadCampaigns() {
                     </div>
                     <div class="campaign-actions">
                         <button class="btn btn-secondary" onclick="viewCampaign(${campaign.id})">👁️ Visualizar</button>
+                        <button class="btn btn-primary" onclick="editCampaign(${campaign.id})">✏️ Editar</button>
                     </div>
                 </div>
             `).join('');
@@ -564,6 +565,123 @@ async function viewCampaign(campaignId) {
         
     } catch (error) {
         showAlert('campaign-alert', 'Erro de conexão ao carregar campanha: ' + error.message, 'error');
+    }
+}
+
+// Função para editar uma campanha
+async function editCampaign(campaignId) {
+    try {
+        // Busca dados da campanha
+        const campaignResponse = await fetch(`/campaigns/${campaignId}`);
+        const campaignResult = await campaignResponse.json();
+        
+        if (!campaignResult.success) {
+            showAlert('campaign-alert', 'Erro ao carregar campanha: ' + campaignResult.error, 'error');
+            return;
+        }
+        
+        const campaign = campaignResult.campaign;
+        
+        // Cria o modal de edição
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        
+        const modalContent = document.createElement('div');
+        modalContent.className = 'modal-content campaign-edit-modal';
+        
+        modalContent.innerHTML = `
+            <div class="campaign-edit-header">
+                <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+                <h2>✏️ Editar Campanha</h2>
+                <div class="campaign-meta">
+                    <span class="meta-item">ID: ${campaign.id}</span>
+                    <span class="meta-item">Criada em: ${new Date(campaign.created_at).toLocaleDateString('pt-BR')}</span>
+                </div>
+            </div>
+        
+            <form id="edit-campaign-form" onsubmit="saveCampaignChanges(event, ${campaign.id})">
+                <div class="form-group">
+                    <label>Nome da Campanha:</label>
+                    <input type="text" class="form-control" id="edit-campaign-name" value="${campaign.name}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Assunto do Email:</label>
+                    <input type="text" class="form-control" id="edit-campaign-subject" value="${campaign.subject}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Corpo do Email:</label>
+                    <textarea class="form-control" id="edit-campaign-body" rows="10" required>${campaign.body_template}</textarea>
+                </div>
+                
+                <div class="campaign-edit-actions">
+                    <button type="submit" class="btn btn-primary">💾 Salvar Alterações</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">❌ Cancelar</button>
+                </div>
+            </form>
+            
+            <div class="campaign-section">
+                <h3>🔧 Variáveis Disponíveis</h3>
+                <div class="variables-info">
+                    <p>Use estas variáveis no assunto e corpo do email para personalização:</p>
+                    <ul>
+                        <li><code>{nome}</code> - Nome do destinatário</li>
+                        <li><code>{email}</code> - Email do destinatário</li>
+                        <li><code>{empresa}</code> - Nome da empresa</li>
+                        <li><code>{cargo}</code> - Cargo/função</li>
+                        <li><code>{telefone}</code> - Número de telefone</li>
+                        <li><code>{linkedin}</code> - Perfil do LinkedIn</li>
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+        
+    } catch (error) {
+        showAlert('campaign-alert', 'Erro ao carregar campanha para edição: ' + error.message, 'error');
+    }
+}
+
+// Função para salvar alterações da campanha
+async function saveCampaignChanges(event, campaignId) {
+    event.preventDefault();
+    
+    const name = document.getElementById('edit-campaign-name').value;
+    const subject = document.getElementById('edit-campaign-subject').value;
+    const body = document.getElementById('edit-campaign-body').value;
+    
+    if (!name || !subject || !body) {
+        showAlert('campaign-alert', 'Todos os campos são obrigatórios.', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/campaigns/${campaignId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name,
+                subject: subject,
+                body: body
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('campaign-alert', 'Campanha atualizada com sucesso!', 'success');
+            closeModal();
+            loadCampaigns(); // Recarrega a lista de campanhas
+        } else {
+            showAlert('campaign-alert', 'Erro ao atualizar campanha: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showAlert('campaign-alert', 'Erro de conexão: ' + error.message, 'error');
     }
 }
 

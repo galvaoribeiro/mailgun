@@ -280,6 +280,46 @@ def get_campaign(campaign_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/campaigns/<int:campaign_id>', methods=['PUT'])
+def update_campaign(campaign_id):
+    """Atualiza uma campanha existente"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Dados JSON necessários'}), 400
+        
+        # Verifica se a campanha existe
+        campaign = email_service.db.get_campaign(campaign_id)
+        if not campaign:
+            return jsonify({'error': 'Campanha não encontrada'}), 404
+        
+        # Valida campos obrigatórios
+        required_fields = ['name', 'subject', 'body']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Campo {field} é obrigatório'}), 400
+        
+        # Atualiza a campanha no banco de dados
+        success = email_service.db.update_campaign(
+            campaign_id=campaign_id,
+            name=data['name'],
+            subject=data['subject'],
+            body_template=data['body']
+        )
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Campanha atualizada com sucesso',
+                'campaign_id': campaign_id
+            })
+        else:
+            return jsonify({'error': 'Erro ao atualizar campanha'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/campaigns/<int:campaign_id>/send', methods=['POST'])
 def send_campaign(campaign_id):
     """Envia uma campanha"""

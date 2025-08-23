@@ -216,11 +216,27 @@ class Database:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO campaigns (name, subject, body_template, updated_at)
-                VALUES (?, ?, ?, ?)
-            ''', (name, subject, body_template, datetime.now()))
+                INSERT INTO campaigns (name, subject, body_template, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (name, subject, body_template, datetime.now(), datetime.now()))
             conn.commit()
             return cursor.lastrowid
+    
+    def update_campaign(self, campaign_id: int, name: str, subject: str, body_template: str) -> bool:
+        """Atualiza uma campanha existente"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute('''
+                    UPDATE campaigns 
+                    SET name = ?, subject = ?, body_template = ?, updated_at = ?
+                    WHERE id = ?
+                ''', (name, subject, body_template, datetime.now(), campaign_id))
+                conn.commit()
+                return cursor.rowcount > 0
+        except Exception as e:
+            print(f"Erro ao atualizar campanha: {e}")
+            return False
     
     def get_campaign(self, campaign_id: int) -> Optional[Dict]:
         """Busca uma campanha específica"""
