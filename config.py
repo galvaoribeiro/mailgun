@@ -20,12 +20,12 @@ class Config:
     DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
     
     # Configurações de email
-    FROM_EMAIL = f'Auditor Simples <no-reply@{MAILGUN_DOMAIN}>'
+    FROM_EMAIL = f'Auditor Simples <contato@{MAILGUN_DOMAIN}>'
     REPLY_TO = 'contato@auditor-simples.com'
     
     # Configurações de tracking
     TRACKING_ENABLED = True
-    TAG_PREFIX = 'cold-email'
+    TAG_PREFIX = 'mkt-email'
     
     @classmethod
     def validate(cls):
