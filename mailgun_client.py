@@ -22,7 +22,8 @@ class MailgunClient:
             'to': to_email,
             'subject': subject,
             'text': body,
-            'o:tracking': 'yes' if tracking else 'no'
+            'o:tracking': 'yes' if tracking else 'no',
+            'h:X-Mailer': 'Auditor Simples Email System'
         }
         
         if reply_to:
@@ -65,7 +66,8 @@ class MailgunClient:
                 'subject': subject,
                 'text': body_template,
                 'o:tracking': 'yes' if Config.TRACKING_ENABLED else 'no',
-                'h:Reply-To': Config.REPLY_TO
+                'h:Reply-To': Config.REPLY_TO,
+                'h:X-Mailer': 'Auditor Simples Email System'
             }
             
             if recipient_vars:

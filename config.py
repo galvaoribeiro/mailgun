@@ -20,7 +20,7 @@ class Config:
     DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
     
     # Configurações de email
-    FROM_EMAIL = f'Auditor Simples <contato@{MAILGUN_DOMAIN}>'
+    FROM_EMAIL = f'"Auditor Simples" <contato@{MAILGUN_DOMAIN}>'
     REPLY_TO = 'contato@auditor-simples.com'
     
     # Configurações de tracking
