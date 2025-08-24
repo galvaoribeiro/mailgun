@@ -18,4 +18,5 @@ COPY . .
 RUN pip install --no-cache-dir --only-binary :all: -r requirements.txt
 
 # Define o comando de inicialização
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:$PORT"]
+#CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:$PORT"]
+CMD gunicorn app:app --bind 0.0.0.0:$PORT
