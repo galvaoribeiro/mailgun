@@ -2,14 +2,18 @@ import sqlite3
 import json
 from datetime import datetime
 from typing import List, Dict, Optional
+import os
 
 class Database:
-    def __init__(self, db_path: str = 'cold_emails.db'):
+    def __init__(self, db_path: str = os.getenv('DB_PATH', 'cold_emails.db')):
         self.db_path = db_path
         self.init_database()
     
     def init_database(self):
         """Inicializa o banco de dados com as tabelas necessárias"""
+        # Certifique-se de que o diretório do banco existe
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
+        
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             
