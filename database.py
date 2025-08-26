@@ -336,7 +336,7 @@ class Database:
             # Emails enviados hoje - usando fuso horário local (UTC-3)
             cursor.execute('''
                 SELECT COUNT(*) FROM email_logs 
-                WHERE strftime('%Y-%m-%d', sent_at, '-3 hours') = strftime('%Y-%m-%d', 'now', '-3 hours')
+                WHERE strftime('%Y-%m-%d', sent_at) = strftime('%Y-%m-%d', 'now', '-3 hours')
             ''')
             emails_sent_today = cursor.fetchone()[0]
             
