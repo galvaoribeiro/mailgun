@@ -363,3 +363,4 @@ class Database:
                 'daily_limit': 10000  # Limite padrão
             }
 
+

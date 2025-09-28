@@ -733,3 +733,4 @@ document.addEventListener('DOMContentLoaded', function() {
     loadBatches(); // Carregar lotes ao iniciar
 });
 
+
