@@ -354,3 +354,4 @@ class Database:
                 'total_campaigns': total_campaigns,
                 'daily_limit': 10000  # Limite padrão
             }
+

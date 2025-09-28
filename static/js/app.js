@@ -732,3 +732,4 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCampaignsForSend(); // Carregar campanhas para envio ao iniciar
     loadBatches(); // Carregar lotes ao iniciar
 });
+
