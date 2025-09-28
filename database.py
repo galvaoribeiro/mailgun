@@ -163,7 +163,7 @@ class Database:
                     'contact_count': row[1],
                     'first_import': row[2],
                     'last_import': row[3],
-                    'status': row[4]
+                    'batch_status': row[4]
                 })
             
             return batches

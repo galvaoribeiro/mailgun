@@ -244,7 +244,7 @@ async function loadBatches() {
                                     ${isActive ? 'Ativo' : 'Ativar'}
                                 </button>
                                 <button class="btn btn-danger" onclick="deactivateBatch('${batch.batch_id}')" ${!isActive ? 'disabled' : ''}>
-                                    ${!isActive ? 'Inativo' : 'Desativar'}
+                                    ${!isActive ? 'Desativado' : 'Desativar'}
                                 </button>
                                 <button class="btn" onclick="viewContacts('${batch.batch_id}')">Ver Contatos</button>
                             </div>
