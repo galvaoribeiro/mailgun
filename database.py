@@ -263,6 +263,20 @@ class Database:
             cursor.execute('SELECT * FROM campaigns ORDER BY created_at DESC')
             return [dict(row) for row in cursor.fetchall()]
     
+    def delete_campaign(self, campaign_id: int) -> bool:
+        """Exclui uma campanha e todos os logs relacionados"""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Primeiro, exclui todos os logs de email relacionados à campanha
+            cursor.execute('DELETE FROM email_logs WHERE campaign_id = ?', (campaign_id,))
+            
+            # Depois, exclui a campanha
+            cursor.execute('DELETE FROM campaigns WHERE id = ?', (campaign_id,))
+            
+            conn.commit()
+            return cursor.rowcount > 0
+    
     def log_email_sent(self, campaign_id: int, contact_id: int, email: str) -> int:
         """Registra um email enviado"""
         with sqlite3.connect(self.db_path) as conn:

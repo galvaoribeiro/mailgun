@@ -320,6 +320,29 @@ def update_campaign(campaign_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/campaigns/<int:campaign_id>', methods=['DELETE'])
+def delete_campaign(campaign_id):
+    """Exclui uma campanha"""
+    try:
+        # Verifica se a campanha existe
+        campaign = email_service.db.get_campaign(campaign_id)
+        if not campaign:
+            return jsonify({'error': 'Campanha não encontrada'}), 404
+        
+        # Exclui a campanha
+        success = email_service.db.delete_campaign(campaign_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Campanha excluída com sucesso'
+            })
+        else:
+            return jsonify({'error': 'Erro ao excluir campanha'}), 500
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/campaigns/<int:campaign_id>/send', methods=['POST'])
 def send_campaign(campaign_id):
     """Envia uma campanha"""

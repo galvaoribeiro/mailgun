@@ -183,6 +183,7 @@ async function loadCampaigns() {
                     <div class="campaign-actions">
                         <button class="btn btn-secondary" onclick="viewCampaign(${campaign.id})">👁️ Visualizar</button>
                         <button class="btn btn-primary" onclick="editCampaign(${campaign.id})">✏️ Editar</button>
+                        <button class="btn btn-danger" onclick="deleteCampaign(${campaign.id})">🗑️ Excluir</button>
                     </div>
                 </div>
             `).join('');
@@ -679,6 +680,30 @@ async function saveCampaignChanges(event, campaignId) {
             loadCampaigns(); // Recarrega a lista de campanhas
         } else {
             showAlert('campaign-alert', 'Erro ao atualizar campanha: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showAlert('campaign-alert', 'Erro de conexão: ' + error.message, 'error');
+    }
+}
+
+// Função para excluir uma campanha
+async function deleteCampaign(campaignId) {
+    if (!confirm('Tem certeza que deseja excluir esta campanha? Esta ação não pode ser desfeita.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/campaigns/${campaignId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('campaign-alert', 'Campanha excluída com sucesso!', 'success');
+            loadCampaigns();
+        } else {
+            showAlert('campaign-alert', 'Erro ao excluir campanha: ' + result.error, 'error');
         }
     } catch (error) {
         showAlert('campaign-alert', 'Erro de conexão: ' + error.message, 'error');
