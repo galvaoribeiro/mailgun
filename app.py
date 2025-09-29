@@ -68,6 +68,41 @@ def import_contacts():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/contacts/manual', methods=['POST'])
+def add_contact_manual():
+    """Adiciona um contato manualmente a um lote específico"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Dados JSON necessários'}), 400
+        
+        # Valida campos obrigatórios
+        if 'email' not in data:
+            return jsonify({'error': 'Email é obrigatório'}), 400
+        
+        if 'batch_id' not in data:
+            return jsonify({'error': 'ID do lote é obrigatório'}), 400
+        
+        # Adiciona o contato
+        contact_id = email_service.db.add_contact(
+            email=data['email'],
+            name=data.get('name'),
+            company=data.get('company'),
+            position=data.get('position'),
+            source=data.get('source'),
+            batch_id=data['batch_id']
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Contato adicionado com sucesso',
+            'contact_id': contact_id
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/contacts/batches', methods=['GET'])
 def get_contact_batches():
     """Lista todos os lotes de contatos"""

@@ -318,6 +318,9 @@ async function viewContacts(batchId) {
         if (result.success) {
             const contacts = result.contacts;
             let html = '<h3>Contatos do Lote ' + batchId + '</h3>';
+            html += '<div style="margin-bottom: 20px;">';
+            html += '<button class="btn btn-primary" onclick="showAddContactForm(\'' + batchId + '\')">➕ Adicionar Contato</button>';
+            html += '</div>';
             if (contacts.length > 0) {
                 html += '<table>';
                 html += '<tr><th>ID</th><th>Nome</th><th>Email</th><th>Empresa</th><th>Status</th><th>Ações</th></tr>';
@@ -369,6 +372,102 @@ async function viewContacts(batchId) {
         showAlert('batches-alert', 'Erro de conexão ao carregar contatos: ' + error.message, 'error');
     } finally {
         document.getElementById('batches-loading').style.display = 'none';
+    }
+}
+
+// Função para mostrar formulário de adicionar contato
+function showAddContactForm(batchId) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    modalContent.innerHTML = `
+        <div class="modal-header">
+            <h2>➕ Adicionar Contato ao Lote ${batchId}</h2>
+            <button class="modal-close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        
+        <form id="add-contact-form" onsubmit="addContactToBatch(event, '${batchId}')">
+            <div class="form-group">
+                <label for="contact-email">Email *:</label>
+                <input type="email" id="contact-email" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="contact-name">Nome:</label>
+                <input type="text" id="contact-name" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="contact-company">Empresa:</label>
+                <input type="text" id="contact-company" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="contact-position">Cargo:</label>
+                <input type="text" id="contact-position" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="contact-source">Origem:</label>
+                <input type="text" id="contact-source" class="form-control" placeholder="Ex: LinkedIn, Site, etc.">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Adicionar Contato</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">❌ Cancelar</button>
+            </div>
+        </form>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+// Função para adicionar contato a um lote
+async function addContactToBatch(event, batchId) {
+    event.preventDefault();
+    
+    const email = document.getElementById('contact-email').value;
+    const name = document.getElementById('contact-name').value;
+    const company = document.getElementById('contact-company').value;
+    const position = document.getElementById('contact-position').value;
+    const source = document.getElementById('contact-source').value;
+    
+    if (!email) {
+        showAlert('batches-alert', 'Email é obrigatório', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/contacts/manual', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                name: name || null,
+                company: company || null,
+                position: position || null,
+                source: source || null,
+                batch_id: batchId
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('batches-alert', 'Contato adicionado com sucesso!', 'success');
+            closeModal();
+            // Recarrega a visualização de contatos
+            viewContacts(batchId);
+        } else {
+            showAlert('batches-alert', 'Erro ao adicionar contato: ' + result.error, 'error');
+        }
+    } catch (error) {
+        showAlert('batches-alert', 'Erro de conexão: ' + error.message, 'error');
     }
 }
 
